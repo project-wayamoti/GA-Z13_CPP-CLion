@@ -13,12 +13,13 @@ using namespace std;
 //## 型宣言
 // 色の設定
 unsigned int armBody = GetColor(255, 255, 0); // アーム本体（黄色）
-unsigned int wire = GetColor(0, 0, 0);        // ワイヤー（黒）
+unsigned int wire = GetColor(255, 255, 255);  // ワイヤー（白）
 unsigned int magnet = GetColor(255, 0, 0);    // 磁石（赤）
 
 // Vector2構造体の宣言
-Vector2 armPosA, armPosB, armMove;             // アーム本体
-Vector2 magnetPos, magnetPendulum, magnetMove; // 磁石
+Vector2 armPosA, armPosB, armMove;
+Vector2 magnetPos, magnetPendulum, magnetMove, magnetMovePos;
+Vector2 gravity;
 
 void keyInput();
 
@@ -30,8 +31,8 @@ void keyInput();
     SetWaitVSyncFlag(TRUE); // 垂直同期を有効にする
 
     // Vector2構造体の初期設定
-    armPosA = { WIDTH / 2, 20 };   // アーム本体の座標
-    armPosB = { WIDTH, 50 };   // アーム本体の座標
+    armPosA = { WIDTH / 2, 20 };           // アーム本体の座標
+    armPosB = { WIDTH, 50 };               // アーム本体の座標
     armMove = { SPEED, SPEED };            // アームの移動量
     magnetPos = { WIDTH / 2, HEIGHT / 2 }; // 磁石の座標
     magnetPendulum = { 0, 0 };             // マグネットの遠心力
@@ -46,8 +47,29 @@ void keyInput();
     while (ProcessMessage() == 0) {
         ClearDrawScreen(); // 画面の更新
 
+        // ふりこの運動ベクタに重力を加算
+        magnetPendulum = addVector(magnetPendulum, gravity);
+
+        // ふりこの移動地点を計算する
+        magnetMovePos = addVector(magnetPos, magnetPendulum);
+
+        // ワイヤーの視点から移動地点までの相対ベクタを取得してその距離を測る
+        float wireLength = getDistance(magnetMovePos, armPosA);
+
+        // ふりこの移動地点をワイヤーが届く位置に補正する
+        // 正規化する 始点（アーム本体側のワイヤ起点）→移動地点（磁石の遠心力）のベクトルを正規化する
+        // あとで書く
+
+
+
         // アーム本体の描画
         DrawBox(armPosB.x, armPosB.y, armPosA.x, armPosA.y, armBody, TRUE);
+
+        // ワイヤーの描画 +30はアーム本体の高さ
+        DrawLine(armPosA.x, armPosA.y + 30, magnetPos.x, magnetPos.y, wire);
+
+        // 磁石の描画
+        DrawCircle(magnetPos.x, magnetPos.y, 10, magnet, TRUE);
 
         // いずれかのキー入力があった場合
         keyInput();
@@ -81,9 +103,11 @@ void keyInput() {
     if (key[KEY_INPUT_LEFT] == 1 || key[KEY_INPUT_A] == 1) {
         // アーム本体を左に移動させる
         armPosA.x -= SPEED;
+        magnetPos.x -= SPEED;
     }
     if (key[KEY_INPUT_RIGHT] == 1 || key[KEY_INPUT_D] == 1) {
         // アーム本体を右に移動させる
         armPosA.x += SPEED;
+        magnetPos.x += SPEED;
     }
 }
