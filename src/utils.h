@@ -12,20 +12,6 @@
 #include "vector.h"
 using namespace std;
 
-// 関数のプロトタイプ宣言
-int random(int min, int max);
-Vector2 addVector(Vector2 V1, Vector2 V2);
-Vector2 subVector(Vector2 V1, Vector2 V2);
-float crossProduct(Vector2 V1, Vector2 V2);
-float dotProduct(Vector2 V1, Vector2 V2);
-Vector2 relative(Vector2 V1, Vector2 V2);
-Vector2 normalized(Vector2 V1);
-float getDistance(Vector2 V1, Vector2 V2);
-bool pointBetween(Vector2 V1, Vector2 V2, Vector2 V3);
-Vector2 findDistance(Vector2 V1, Vector2 V2);
-Vector2 dotNearestNeighborSearch(Vector2 V1, Vector2 V2);
-void moveCross(Vector2 *pVec2, Vector2 vec2, int p);
-
 // ##### ランダムな値を返却する関数 #####
 // 参考文献 : http://vivi.dyndns.org/tech/cpp/random.html
 // 引数     : min, max
@@ -44,8 +30,8 @@ int random(int min, int max) {
 // 引数     : V1, V2
 // 戻り値   : 加算したベクトル
 // 注意     : なし
-Vector2 addVector(Vector2 V1, Vector2 V2) {
-    return Vector2(V1.x + V2.x, V1.y + V2.y);
+Vector2 addVector(const Vector2& V1, const Vector2& V2) {
+    return {V1.x + V2.x, V1.y + V2.y};
 };
 
 // ##### ベクトルの減算 #####
@@ -53,8 +39,17 @@ Vector2 addVector(Vector2 V1, Vector2 V2) {
 // 引数     : V1, V2
 // 戻り値   : 減算したベクトル
 // 注意     : なし
-Vector2 subVector(Vector2 V1, Vector2 V2) {
-    return Vector2(V1.x - V2.x, V1.y - V2.y);
+Vector2 subVector(const Vector2& V1, const Vector2& V2) {
+    return {V1.x - V2.x, V1.y - V2.y};
+};
+
+// ##### ベクトルの乗算 #####
+// 参考文献 : なし
+// 引数     : V1, V2
+// 戻り値   : 乗算したベクトル
+// 注意     : なし
+Vector2 mulVector(const Vector2& V1, const Vector2& V2) {
+    return {V1.x * V2.x, V1.y * V2.y};
 };
 
 // ##### 外積計算関数 #####
@@ -62,8 +57,8 @@ Vector2 subVector(Vector2 V1, Vector2 V2) {
 // 引数     : x1, y1, x2, y2
 // 戻り値   : 外積
 // 注意     : なし
-float crossProduct(Vector2 V1, Vector2 V2) {
-    return (float)V1.x * V2.y - V1.y * V2.x;
+float crossProduct(const Vector2& V1, const Vector2& V2) {
+    return V1.x * V2.y - V1.y * V2.x;
 }
 
 // ##### 内積計算関数 #####
@@ -71,8 +66,8 @@ float crossProduct(Vector2 V1, Vector2 V2) {
 // 引数     : Vector2 V1, Vector2 V2
 // 戻り値   : 内積
 // 注意     : なし
-float dotProduct(Vector2 V1, Vector2 V2) {
-    return (float)V1.x * V2.x + V1.y * V2.y;
+float dotProduct(const Vector2& V1, const Vector2& V2) {
+    return V1.x * V2.x + V1.y * V2.y;
 }
 
 // ##### 相対ベクター計算関数 #####
@@ -80,10 +75,35 @@ float dotProduct(Vector2 V1, Vector2 V2) {
 // 引数     : x1, y1, x2, y2
 // 戻り値   : 相対ベクター
 // 注意     : なし
-Vector2 relative(Vector2 V1, Vector2 V2) {
+Vector2 relative(const Vector2& V1, const Vector2& V2) {
     // 2つの円の中心座標の差分を計算（相対ベクトル）
     // 目的の地点 - 現在の地点
-    return Vector2(V1.x - V2.x, V1.y - V2.y);
+    return {V1.x - V1.y, V2.x - V2.y};
+};
+
+// ##### 2つの円の中心座標(Vector)の距離を計算する関数 #####
+// 参考文献 : https://www.geisya.or.jp/~mwm48961/math/distance1j.htm
+// 引数     : Vector2 V1, Vector2 V2
+// 戻り値   : 2つの円の中心座標の距離
+// 注意     : sqrt関数を使用するため、math.h or cmathをインクルードする必要がある
+float getVectorDistance(const Vector2& V1, const Vector2& V2) {
+    // 2つの円の中心座標の差分を計算（相対ベクトル）
+    // 目的の地点 - 現在の地点
+    Vector2 diff = subVector(V1, V2);
+    // 2つの円の中心座標の距離を計算
+    return sqrtf(powf(diff.x, 2) + powf(diff.y, 2));
+};
+
+// ##### 相対ベクターの長さを計算する関数 #####
+// 参考文献 : なし
+// 引数     : Vector2 V1
+// 戻り値   : 相対ベクターの長さ
+// 注意     : sqrt関数を使用するため、math.h or cmathをインクルードする必要がある
+float getVectorLength(const Vector2& V1) {
+    // 相対ベクトルの計算
+    Vector2 relativeVector = mulVector(V1, V1);
+    // 相対ベクトルの長さを計算
+    return sqrtf(relativeVector.x + relativeVector.y);
 };
 
 // ##### 相対ベクター正規化 #####
@@ -91,43 +111,28 @@ Vector2 relative(Vector2 V1, Vector2 V2) {
 // 引数     : V1
 // 戻り値   : 相対ベクター
 // 注意     : なし
-Vector2 normalized(Vector2 V1) {
-    // 相対ベクトルを正規化する
-    float length = getDistance(V1, V1);
+Vector2 normalized(const Vector2& V1) {
     // 正規化した相対ベクトルを返却する
-    return Vector2(V1.x / length, V1.y / length);
+    //return {V1.x / getVectorLength(V1), V1.y / getVectorLength(V1)};
+    return {
+        V1.x / sqrt((V1.x * V1.x) + (V1.y * V1.y)),
+        V1.y / sqrt((V1.x * V1.x) + (V1.y * V1.y))
+    };
 };
-
-// ##### 2つの円の中心座標の距離を計算する関数 #####
-// 参考文献 : https://www.geisya.or.jp/~mwm48961/math/distance1j.htm
-// 引数     : Vector2 V1, Vector2 V2
-// 戻り値   : 2つの円の中心座標の距離
-// 注意     : sqrt関数を使用するため、math.h or cmathをインクルードする必要がある
-float getDistance(Vector2 V1, Vector2 V2) {
-    // 2つの円の中心座標の差分を計算（相対ベクトル）
-    // 目的の地点 - 現在の地点
-    Vector2 diff = subVector(V1, V2);
-    // 2つの円の中心座標の距離を計算
-    return sqrt(pow(diff.x, 2) + pow(diff.y, 2));
-}
 
 // ##### 内積と外積を計算して点と点の間だったらtrueを返す #####
 // 参考文献 : なし
 // 引数     : Vector2 V1, Vector2 V2, Vector2 V3
 // 戻り値   : 点と点の間だったらtrue
 // 注意     : なし
-bool pointBetween(Vector2 V1, Vector2 V2, Vector2 V3) {
+bool pointBetween(const Vector2& V1, const Vector2& V2, const Vector2& V3) {
     // 点と点の間かどうかを判定する
     // 2つの円の中心座標の差分を計算（相対ベクトル）
     // 目的の地点 - 現在の地点
     Vector2 V4 = subVector(V2, V1);
     Vector2 V5 = subVector(V3, V1);
-    // 外積を計算
-    float crossProduct = crossProduct (V4, V5);
-    // 内積を計算
-    float dotProduct = dotProduct (V4, V5);
     // 点と点の間の幅前後100に侵入してきたらtrueを返す
-    if (crossProduct >= -10 || crossProduct <= 10 && dotProduct >= 0) {
+    if (dotProduct (V4, V5) >= -10 || crossProduct (V4, V5) <= 10 && dotProduct (V4, V5) >= 0) {
         return true;
     }
     // 内積と外積を計算して点と点の間だったらtrueを返す
@@ -135,18 +140,15 @@ bool pointBetween(Vector2 V1, Vector2 V2, Vector2 V3) {
 }
 
 // 判定処理を共通化
-Vector2 findDistance(Vector2 V1, Vector2 V2) {
+Vector2 findDistance(const Vector2& V1, const Vector2& V2) {
     // 相対ベクトルを正規化
     Vector2 relativeVector = {
-        (V1.x - V2.x) / getDistance(V1, V2),
-        (V1.y - V2.y) / getDistance(V1, V2)
+        (V1.x - V2.x) / getVectorDistance (V1, V2),
+        (V1.y - V2.y) / getVectorDistance (V1, V2)
     };
 
-    // return 時に入れ替えする方法がわからないのでPOWER IS POWER
-    Vector2 tmp = { relativeVector.y, -relativeVector.x };
-
     // 中央物体（球体）の進行方向ベクトルを返却
-    return tmp;
+    return { relativeVector.y, -relativeVector.x };
 };
 
 // ##### 最近傍点を探す #####
@@ -154,7 +156,7 @@ Vector2 findDistance(Vector2 V1, Vector2 V2) {
 // 引数     : V1 目的の地点, V2 現在の地点
 // 戻り値   : 最近傍点(Vector2)
 // 注意     : なし
-Vector2 dotNearestNeighborSearch(Vector2 V1, Vector2 V2) {
+Vector2 dotNearestNeighborSearch(const Vector2& V1, const Vector2& V2) {
     // 内積を計算する
     float dot = dotProduct (V1, V2);
     Vector2 V3 = normalized (V1);
@@ -169,7 +171,7 @@ Vector2 dotNearestNeighborSearch(Vector2 V1, Vector2 V2) {
 // 引数     : pPos, vec2, p
 // 戻り値   : なし
 // 注意     : pには1か2を入れる必要がある。1はpPos1、2はpPos2を操作する
-void moveCross(Vector2 *pVec2, Vector2 vec2, int p) {
+void moveCross(Vector2 *pVec2, const Vector2& vec2, int p) {
     if (p == 1) {
         // 十字キーでpPos2を移動させる
         if (CheckHitKey(KEY_INPUT_UP)) {
